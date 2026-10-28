@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Development as a Verifiable System — DeepSpace Articles</title>
+  <meta name="description" content="A cross-project engineering method: four loops, six costs, five principles, small commits, short-branch validation, and reusable templates.">
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="../index.html">DeepSpace Articles</a>
+    <nav>
+      <a href="../index.html">All articles</a>
+      <a href="https://github.com/wwkkyy0325">GitHub</a>
+    </nav>
+  </header>
+  <main class="article">
+    <h1>Development as a Verifiable System</h1>
+    <div class="article-meta">
+      <span>2026-10</span>
+      <a href="../zh/development-as-a-verifiable-system.html">中文</a>
+      <a href="https://github.com/wwkkyy0325">GitHub</a>
+    </div>
+<h2 id="my-engineering-method-four-loops-and-six-costs">My Engineering Method: Four Loops and Six Costs</h2>
+<blockquote>
+<p>Version: 2026-10 · Genre: engineering method + cross-project retrospective
+For: independent developers, technical leads, engineers who work with AI over long periods</p>
+</blockquote>
+<hr>
+<h2 id="one-sentence-conclusion">One-Sentence Conclusion</h2>
+<p><strong>Efficiency is not writing more code per hour; it is lowering six costs: decision, rework, context, risk, coordination, and maintenance.</strong>
+The core of the method is one sentence: <strong>make things provable first, then make them fast.</strong></p>
+<hr>
+<h2 id="quick-guide">Quick Guide</h2>
+<h3 id="if-you-only-have-three-minutes">If You Only Have Three Minutes</h3>
+<p>Most development time is not spent "writing code." It is spent on:</p>
+<ul>
+<li>re-understanding the version of yourself from last week;</li>
+<li>stepping into a pit you already stepped into;</li>
+<li>repeatedly discussing "what exactly are we building?";</li>
+<li>not knowing whether a change broke something;</li>
+<li>adding more and more until nothing can be deleted;</li>
+<li>being unable to pick up the work when the person (or the AI session) changes.</li>
+</ul>
+<p>What I do is not "write harder." It is to build one loop for each of those six problems:</p>
+<ol>
+<li><strong>Intent loop:</strong> write goals, non-goals, and hard constraints before writing code.</li>
+<li><strong>Evidence loop:</strong> instrument first, conclusions second; every conclusion points to a report.</li>
+<li><strong>Convergence loop:</strong> expand first, delete later; deletion has criteria, refactoring has machine proof.</li>
+<li><strong>Memory loop:</strong> let docs, tasks, changes, and failure records remember for me; next time I do not have to re-think.</li>
+</ol>
+<p>There is also a master switch: <strong>do not overthink.</strong> Once the smallest end-to-end loop is settled, build it; let evidence answer the rest, not imagination. Do not spend energy on "might exist someday" requirements, and do not fight imaginary enemies.</p>
+<p>In one sentence: <strong>treat development as a verifiable system, not a continuous performance held together by memory.</strong></p>
+<h3 id="if-you-are-solving-a-specific-problem">If You Are Solving a Specific Problem</h3>
+<table>
+<thead>
+<tr>
+<th>Problem you are facing</th>
+<th>Section</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Requirements keep changing; the work drifts</td>
+<td>3.1</td>
+</tr>
+<tr>
+<td>You do not know whether a change broke something</td>
+<td>3.2, 3.3</td>
+</tr>
+<tr>
+<td>The same pit was stepped into twice</td>
+<td>3.2, 3.4</td>
+</tr>
+<tr>
+<td>The project grows and cannot be deleted</td>
+<td>3.3</td>
+</tr>
+<tr>
+<td>A new person or AI session cannot pick it up</td>
+<td>3.4</td>
+</tr>
+<tr>
+<td>Whether to split a module/service</td>
+<td>3.3</td>
+</tr>
+<tr>
+<td>What an MVP should actually do</td>
+<td>3.1, 3.2</td>
+</tr>
+<tr>
+<td>How often to commit, how to use branches</td>
+<td>5.3</td>
+</tr>
+<tr>
+<td>Busy all day but unable to say what was produced</td>
+<td>4, 5</td>
+</tr>
+<tr>
+<td>Whether this method holds across many projects</td>
+<td>6</td>
+</tr>
+<tr>
+<td>Want to copy the templates directly</td>
+<td>Appendix A</td>
+</tr>
+</tbody>
+</table>
+<h3 id="if-you-remember-only-three-sentences">If You Remember Only Three Sentences</h3>
+<ol>
+<li><strong>A "done" that cannot be verified is an illusion.</strong></li>
+<li><strong>Context that cannot be handed over is a liability.</strong></li>
+<li><strong>A system that cannot delete will rot.</strong></li>
+</ol>
+<hr>
+<h2 id="abstract">Abstract</h2>
+<p>This article summarizes a development method used repeatedly across more than ten projects in different languages. It is not a toolchain checklist; it is four loops: intent, evidence, convergence, and memory. The intent loop uses goals, non-goals, and hard constraints to rule out wrong directions before code is written. The evidence loop requires every conclusion to point to a reviewable report and records failures and negative results. The convergence loop turns "expand first, delete later" into engineering actions with criteria. The memory loop makes design, tasks, changes, and worklogs a handoverable context.</p>
+<p>Running through the four loops are five working principles: smallest loop first, do not design for imaginary enemies, leave seams before growing flesh, cut modules by logical unit, and let the MVP validate the hardest point. At the execution level, two things control risk: small commits cut changes into rollbackable slices, and short branches let uncertain new directions be tested or discarded at the lowest cost. The article uses six costs to explain why the method is efficient, and gives a daily/weekly operating rhythm, cross-project evidence, anti-patterns, and costs. All cases come from real projects; client names and project identifiers have been removed.</p>
+<p><strong>Keywords:</strong> engineering method; evidence first; verifiability; convergence; AI collaboration</p>
+<hr>
+<h2 id="1-the-problem-why-effort-is-not-efficiency">1. The Problem: Why "Effort" Is Not "Efficiency"</h2>
+<p>A counterintuitive fact: writing code is usually not the most time-consuming part.</p>
+<p>What actually consumes time:</p>
+<ul>
+<li><strong>Decision:</strong> should this be done at all, to what degree, and what counts as done?</li>
+<li><strong>Rework:</strong> the direction was wrong, or it was finished and then found unverifiable;</li>
+<li><strong>Context rebuild:</strong> coming back three days later and forgetting why it was written this way;</li>
+<li><strong>Risk:</strong> the change is too large to touch; after touching it, you do not know whether it broke;</li>
+<li><strong>Coordination:</strong> the person, the AI, and your future self understand the same code differently;</li>
+<li><strong>Maintenance:</strong> features only go in, never out, and the system grows every year.</li>
+</ul>
+<p>These problems share one property: <strong>none of them can be solved by "writing faster."</strong></p>
+<p>Solo development + AI collaboration amplifies them. AI is fast, but it forgets, it is confidently wrong, and it continues down your assumptions. The bottleneck moves from "typing speed" to two things:</p>
+<ol>
+<li><strong>Can you state clearly what you want?</strong></li>
+<li><strong>Can you judge whether it was done correctly?</strong></li>
+</ol>
+<p>This method grew around those two questions.</p>
+<hr>
+<h2 id="2-the-core-proposition">2. The Core Proposition</h2>
+<blockquote>
+<p><strong>Development is not translating an idea into code; it is turning intent into a system that is verifiable, handoverable, and convergeable.</strong></p>
+</blockquote>
+<p>Three corollaries:</p>
+<ul>
+<li><strong>A completion that cannot be verified is an illusion.</strong> "It should work" is not a state of done.</li>
+<li><strong>Context that cannot be handed over is a liability.</strong> Information that exists only in your head is equivalent to no information.</li>
+<li><strong>A system that cannot delete will rot.</strong> Add without subtract, and complexity compounds.</li>
+</ul>
+<h3 id="five-working-principles">Five Working Principles</h3>
+<table>
+<thead>
+<tr>
+<th>Principle</th>
+<th>Meaning</th>
+<th>Anti-pattern</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Smallest loop first</strong></td>
+<td>Think only until an end-to-end loop can run, then build it</td>
+<td>Think for three months without building</td>
+</tr>
+<tr>
+<td><strong>Do not design for imaginary enemies</strong></td>
+<td>No second user, no abstraction</td>
+<td>Pre-write a plugin layer for a future platform</td>
+</tr>
+<tr>
+<td><strong>Leave seams before growing flesh</strong></td>
+<td>Design entry/exit points; do not implement early</td>
+<td>Hard-code the trunk, or build the wheel early</td>
+</tr>
+<tr>
+<td><strong>Cut modules by logical unit</strong></td>
+<td>Keep things that live and die together; separate things that change independently</td>
+<td>One module/microservice per feature point</td>
+</tr>
+<tr>
+<td><strong>MVP validates the hardest point</strong></td>
+<td>Buy information, not features</td>
+<td>Shrink every feature a little</td>
+</tr>
+</tbody>
+</table>
+<p>The four loops below correspond to the three corollaries; the five principles run through all of them.</p>
+<hr>
+<h2 id="3-the-four-loops">3. The Four Loops</h2>
+<h3 id="31-intent-loop-write-constraints-before-code">3.1 Intent Loop: Write Constraints Before Code</h3>
+<p>The first document of every project is not a README; it is <code>design.md</code>. It answers only four questions:</p>
+<ol>
+<li>What is this?</li>
+<li>What are the goals?</li>
+<li><strong>What are the non-goals?</strong></li>
+<li><strong>What are the hard constraints?</strong></li>
+</ol>
+<p>The last two matter most.</p>
+<p><strong>Non-goals are first-class citizens.</strong> They are not "later"; they are "explicitly not doing this now, with a written reason." For example:</p>
+<ul>
+<li>An offline speech project wrote: "Real-time dictation has been removed from scope. Do not reintroduce it without a new design review."</li>
+<li>A document-ingestion project wrote: "Embeddings and rerankers, ever. Not 'later,' not 'optional.'"</li>
+<li>An anti-cheat model project wrote: "This is a research model, not an automatic ban system."</li>
+</ul>
+<p>The purpose of a non-goal is not to limit ambition; it is to <strong>hit the brake at the moment you are most tempted to "just add one thing."</strong></p>
+<p><strong>Hard constraints come before technology choices.</strong> Constraints are numbered (C1, C2, ...), and each carries a consequence:</p>
+<table>
+<thead>
+<tr>
+<th>Constraint</th>
+<th>Consequence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No GPU; CPU from 2013 onward</td>
+<td>Rules out a class of models</td>
+</tr>
+<tr>
+<td>No outbound network at runtime</td>
+<td>Rules out cloud ASR and online updates</td>
+</tr>
+<tr>
+<td>No <code>unsafe</code></td>
+<td>Rules out some dependencies and signal-handling patterns</td>
+</tr>
+<tr>
+<td>Zero configuration</td>
+<td>The default path cannot require a user decision</td>
+</tr>
+</tbody>
+</table>
+<p>Once constraints are written down, 80% of bad designs are ruled out before they cost anything.</p>
+<p><strong>Amend with a trace; do not rewrite history.</strong> Constraints change, but changes carry a date and a reason. In one project, "zero configuration" was later amended to "zero configuration by default, but advanced users can see and change the engine" — the original sentence was kept and the amendment appended, because the judgment it protected still held.</p>
+<p><strong>Record rejected options.</strong> <code>design.md</code> has a section for "options considered and not adopted." That half is often more useful than the final design: it tells the next person which roads were already walked and why they did not work.</p>
+<p>In a real ADR, the decision to move the merchant client to a mini-program also recorded two rejected options: keep the web client and add a mini-program (the same rule implemented twice; the repository had already produced real defects from that), and merge into the same AppID (the review entity and permission boundary would be tied together). Recording rejected options is not a ritual; it saves the next person from re-arguing.</p>
+<h4 id="smallest-loop-build-first-think-clearly-later">Smallest Loop: Build First, Think Clearly Later</h4>
+<p>"Do not overthink" is not "do not think." It is <strong>to put the boundary of thinking at "the smallest end-to-end loop that can run."</strong></p>
+<ul>
+<li><strong>Think about:</strong> the core value, the shortest verifiable path, and what "it runs" means;</li>
+<li><strong>Do not think about:</strong> expansion in three years, ten possible platforms, five possible user types.</li>
+</ul>
+<p>Once the smallest loop is settled, build it. What you build will tell you which part you thought wrong; what you never build only makes you keep thinking.</p>
+<p>The examples are consistent across projects: a runtime project connected "kernel → agent loop → server → deployment" end to end on the second day, instead of perfecting each layer first; an offline speech project verified that the engine could run on the target CPU before building the UI; a document-pipeline project built the evaluation harness before choosing a model. The common point: <strong>make the shortest path work first, then decide which segment deserves to be thickened.</strong></p>
+<h4 id="do-not-design-for-imaginary-enemies">Do Not Design for Imaginary Enemies</h4>
+<p>One class of work is pure consumption: abstracting early for "might exist someday" requirements.</p>
+<ul>
+<li>There might be a second database? Write a storage abstraction first.</li>
+<li>We might switch message queues? Wrap pub/sub first.</li>
+<li>There might be ten callers? Design a plugin protocol first.</li>
+</ul>
+<p>The problem is not that these abstractions are necessarily wrong; it is that <strong>you are using a real project's budget to fight an enemy that does not exist.</strong> If that future actually arrives, your abstraction is probably wrong anyway — because you had no real constraints.</p>
+<p>The criterion is simple: <strong>does this abstraction have a second user today?</strong> If not, do not abstract. Wait for the second user, then refactor; by then you have real information, and the cost of refactoring is far lower than the cost of designing ahead.</p>
+<h4 id="leave-seams-not-implementations">Leave Seams, Not Implementations</h4>
+<p>"Do not overthink" is not "hard-code." The difference:</p>
+<ul>
+<li><strong>Leave a seam:</strong> think through where future additions/deletions enter and exit;</li>
+<li><strong>Implement early:</strong> write that thing now.</li>
+</ul>
+<p>A seam is cheap: an entry, a registration point, a boundary, a config item. An implementation is expensive: code, tests, docs, maintenance.</p>
+<p>The criterion: <strong>if that future change actually happens, can the change be confined to one known location?</strong> If yes, a seam is enough; if not, you need a heavier abstraction. Leave the seam first; grow the flesh later.</p>
+<h3 id="32-evidence-loop-instrument-first-conclusions-second">3.2 Evidence Loop: Instrument First, Conclusions Second</h3>
+<p>This is the strongest rule in the method, and the hardest to keep.</p>
+<p><strong>A task starts from a symptom, not a feature.</strong> The first paragraph of a task doc is not "I will implement X"; it is "what was observed":</p>
+<ul>
+<li>the user's exact words;</li>
+<li>a log excerpt;</li>
+<li>a state table: at what time, in what app state, which log line appeared, which one did not;</li>
+<li>what has already been ruled out.</li>
+</ul>
+<p>Then come the hypothesis, root cause, fix, and verification.</p>
+<p><strong>Every step needs a verify.</strong> The task is split into numbered steps, and every step carries one line: "how do we prove it is done?" Not "implement X," but "run this command and see this result."</p>
+<p><strong>Every conclusion must point to a report.</strong> One project has an <code>evidence.md</code> with this rule:</p>
+<blockquote>
+<p>A number may appear in a design or task doc only if a row below names the report that backs it. A number without a row is "to be re-run," not "citable."</p>
+</blockquote>
+<p>Another document puts it more directly:</p>
+<blockquote>
+<p>A number that cannot be wrong is not a measurement.</p>
+</blockquote>
+<p><strong>Failures must be recorded; negative results are results.</strong> One project maintains <code>failed-attempts.md</code>, specifically for "roads tried and abandoned," with numbers, dates, and reasons. Another project's rules say:</p>
+<blockquote>
+<p>Report negative results. "The sweep found nothing" and "this switch is not worth its cost" are both findings.</p>
+</blockquote>
+<p><strong>Validate the instrument before trusting the reading.</strong> This is the most easily overlooked rule. Real cases:</p>
+<ul>
+<li>A probability probe returned 0.001 for every file, which looked like a code-path bug; the real cause was a missing context window — <strong>the instrument was broken.</strong></li>
+<li>A "zero hits" result turned out to be a fourteen-hour-old binary — <strong>measuring something new with an old ruler.</strong></li>
+<li>A plausible mechanism explanation failed the test three times in a row — <strong>a plausible mechanism is not a diagnosis.</strong></li>
+</ul>
+<p>So one rule: <strong>when you have a hypothesis, write the test that would falsify it first.</strong></p>
+<p>A concrete example: during the GAIA round, a 30-question subset was used for regression — fixed model, temperature, and version; change the hierarchy and context order; record failure modes. Scores were not used as conclusions; failure modes went into the design (the per-question raw data was later lost; the failure taxonomy survived).</p>
+<p><strong>A gate must be proven to fail.</strong> One corporate-website project has nine automated gates (layout, readability, animation, authentication, lock, dialog, flow, ...). Before a new gate goes live, the corresponding problem must be deliberately created and the gate confirmed to fail; only then is it trusted.</p>
+<blockquote>
+<p>Every new gate must be "deliberately broken" once, proving it will fail, before it is trusted.</p>
+</blockquote>
+<p><strong>Experiments need pre-registered rules.</strong> One model project uses a champion/challenger protocol:</p>
+<ul>
+<li>fixed folds, the same set for every variant;</li>
+<li>the primary metric is fixed (for example, player-level recall at FPR = 1%);</li>
+<li>a challenger replaces the champion only if the primary metric improves and the secondary metrics do not materially degrade;</li>
+<li>if metrics tie, keep the simpler model;</li>
+<li>every experiment writes a report and is registered in the experiment table, including negative results.</li>
+</ul>
+<p>The value of these rules is not "more scientific"; it is <strong>preventing post-hoc explanation</strong>: people easily invent a reason for a result already in hand, and pre-registration makes that hard.</p>
+<h4 id="mvp-buy-the-most-critical-information-at-the-lowest-cost">MVP: Buy the Most Critical Information at the Lowest Cost</h4>
+<p>MVP is often misunderstood as "make a smaller version of every feature." That is not an MVP; that is <strong>making everything shallow once</strong> — every feature is unverified, every risk remains.</p>
+<p>My definition of MVP is: <strong>at the lowest cost, validate the hardest, most controversial, or most uncertain points in the product.</strong></p>
+<ul>
+<li>Technical feasibility uncertain → build a spike first, prove it runs;</li>
+<li>Whether users will use it uncertain → build a loop that covers only the core action;</li>
+<li>Integration risk highest → connect the hardest segment first;</li>
+<li>The approach is controversial → build two minimal comparisons and decide with data.</li>
+</ul>
+<p><img alt="Figure 1: Two readings of MVP" src="../assets/fig1-mvp-two-readings.png"></p>
+<p><em>Figure 1: Two readings of MVP</em></p>
+<p>The output of an MVP is not "a version with few features"; it is <strong>a set of eliminated uncertainties.</strong> Few features is a side effect, not the purpose.</p>
+<p>This is the two sides of "smallest loop": the smallest loop answers "can the path run?", the MVP answers "is the assumption most likely to overturn the plan actually true?" Neither pursues completeness; both pursue <strong>real information as fast as possible</strong>.</p>
+<h3 id="33-convergence-loop-expand-first-delete-later">3.3 Convergence Loop: Expand First, Delete Later</h3>
+<p>Most systems do not die from too few features; they die from features that only go in.</p>
+<p><strong>Expand first, converge later.</strong> Early on, allow roughness and duplication, and lay out the capability surface; but there must be an explicit convergence period that does three things:</p>
+<ol>
+<li><strong>Delete capability surfaces:</strong> remove features nobody uses or that the system should not own;</li>
+<li><strong>Delete duplicate surfaces:</strong> two protocols, two implementations, two entries converge into one;</li>
+<li><strong>Delete structural debt:</strong> split giant files, converge state fields, fix layer inversions.</li>
+</ol>
+<p><strong>Deletion needs a criterion.</strong> "The frontend never calls it" is not sufficient, because:</p>
+<ul>
+<li>operations may still call it;</li>
+<li>an AI/agent may still call it;</li>
+<li>it might be needed later.</li>
+</ul>
+<p>So my criterion is: <strong>does it constitute the system's capability surface?</strong> If yes, keep it; if not, delete it. Before deleting, make three maps: crate level, route level, feature level, and decide item by item.</p>
+<h4 id="cut-modules-by-logical-unit-not-by-feature-point">Cut Modules by Logical Unit, Not by Feature Point</h4>
+<p>Module boundaries should not be distributed evenly by "number of feature points," nor should they be hard-split into microservices or independent modules just to "look architecturally clean." Boundaries should follow <strong>logical units</strong>:</p>
+<ul>
+<li>two functions that are deeply intertwined and have no independent external dependency → one module;</li>
+<li>a function with an independent lifecycle, callers, and failure domain → its own module;</li>
+<li>a business with three functions, where two are strongly coupled and the third is independent → <strong>two modules, not three.</strong></li>
+</ul>
+<p><img alt="Figure 2: Cutting modules by logical unit" src="../assets/fig2-module-boundaries.png"></p>
+<p><em>Figure 2: Cutting modules by logical unit</em></p>
+<p>The cost of hard splitting is not "a few more files"; it is:</p>
+<ul>
+<li>every change requires cross-module coordination;</li>
+<li>what was one function call becomes a cross-boundary protocol;</li>
+<li>error handling, transaction boundaries, and data consistency are forced outward;</li>
+<li>you pay real complexity for "clarity."</li>
+</ul>
+<p>The criterion for a module is not "it does one thing," but "do its concerns share the same reason to change." <strong>Keep things that live and die together; separate things that change independently.</strong></p>
+<p><strong>Refactoring needs machine proof.</strong> A large refactor easily becomes "I think I did not break it." My practice:</p>
+<ul>
+<li>every commit passes the full test suite independently; any step can be rolled back alone;</li>
+<li>pure moves are audited segment by segment with <code>--color-moved</code>, proving "this is only a move";</li>
+<li>cross-language contracts use golden fixtures asserted on both sides;</li>
+<li>the old frontend is frozen as a golden master; the new frontend catches up in batches before switching;</li>
+<li>control-flow changes use sentinel enums, not an extra <code>if</code> wrapper.</li>
+</ul>
+<p><strong>Corrections do not erase history.</strong> The change log is append-only: the original entry stays, and a correction is a new entry. Superseded documents are not deleted; they are marked "superseded, kept for the reason." This is not fussiness; it lets the next person see "why we thought that at the time."</p>
+<p><strong>Releases must be rollbackable.</strong> Versions, checksums, release notes, and install/uninstall paths are required; the previous build is kept as a rollback baseline.</p>
+<h3 id="34-memory-loop-make-the-method-independent-of-memory">3.4 Memory Loop: Make the Method Independent of Memory</h3>
+<p>The first three loops solve "do it right"; this one solves "do it right again next time."</p>
+<p><strong>A unified documentation skeleton.</strong> Whether the project is Rust, Go, Python, or TypeScript, it has the same structure:</p>
+<pre><code>docs/llmwiki/
+  design.md      current state, goals, non-goals, hard constraints, rejected options
+  tasks/         one per unit of work, numbered steps + a verify per step
+  changelog.md   append-only change log, explaining &quot;why&quot;
+</code></pre>
+<p>The skeleton holds across languages, which shows it is not an accessory of a framework but the method itself.</p>
+<p><strong>Rebuild the worklog from evidence.</strong> At the end of a project, rebuild <code>WORKLOG.md</code> from git records, file timestamps, and runtime logs. The rule:</p>
+<blockquote>
+<p>Do not fill in or infer working days without evidence.</p>
+</blockquote>
+<p>The log explicitly records "evidence and gaps": which days had no commits, which conclusions cannot be reviewed. <strong>Admitting a gap is more useful than inventing a complete story.</strong></p>
+<p><strong>Freeze state in a handover document.</strong> One project maintains <code>next-session.md</code>: current frozen state, next step, stop rules, timebox. The purpose is not planning, but letting the next session (human or AI) start without starting from zero.</p>
+<p><strong>Make the project agent-readable.</strong> This is not "writing docs for AI"; it is designing interfaces an agent can use directly:</p>
+<ul>
+<li>every command has <code>--json</code>, results on stdout, diagnostics on stderr, distinct exit codes on failure;</li>
+<li>the project root has <code>llms.txt</code>, listing commands, parameters, and constraints in a machine-readable way;</li>
+<li>the CLI owns the full capability; the GUI is a minimal shell;</li>
+<li><code>AGENTS.md</code> is written as a contract: what to read first, how to commit, what not to do, how to verify.</li>
+</ul>
+<p>The opening of one offline-speech project's <code>AGENTS.md</code>:</p>
+<blockquote>
+<p>These are not style preferences — each one exists because something went wrong without it.</p>
+</blockquote>
+<p>That sentence can serve as the footnote of the whole method: <strong>a rule is not aesthetics; it is sedimented incident.</strong></p>
+<hr>
+<h2 id="4-six-costs-the-ledger-of-efficient-development">4. Six Costs: The Ledger of Efficient Development</h2>
+<p>Translated into "why is it fast?", the method is a reduction of six costs:</p>
+<table>
+<thead>
+<tr>
+<th>Cost</th>
+<th>Practice</th>
+<th>Benefit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Decision cost</strong></td>
+<td>Write goals, non-goals, and hard constraints first</td>
+<td>Stop re-arguing "should we do it"</td>
+</tr>
+<tr>
+<td><strong>Rework cost</strong></td>
+<td>Instrument first, falsify first, define acceptance first</td>
+<td>Do not build what cannot be verified</td>
+</tr>
+<tr>
+<td><strong>Context cost</strong></td>
+<td>design / tasks / changelog / worklog</td>
+<td>No need to rebuild memory next time</td>
+</tr>
+<tr>
+<td><strong>Risk cost</strong></td>
+<td>Small commits, short-branch validation, golden master, rollback</td>
+<td>Dare to refactor, dare to try new directions</td>
+</tr>
+<tr>
+<td><strong>Coordination cost</strong></td>
+<td>AGENTS.md, llms.txt, <code>--json</code></td>
+<td>Both humans and agents can take over</td>
+</tr>
+<tr>
+<td><strong>Maintenance cost</strong></td>
+<td>Single entry, deletion criteria, convergence period</td>
+<td>The system does not grow with every feature</td>
+</tr>
+</tbody>
+</table>
+<p>Notice that "typing speed" is not on the list. <strong>Efficiency is reducing wasted actions, not increasing the density of effective actions.</strong></p>
+<hr>
+<h2 id="5-how-a-day-and-a-week-run">5. How a Day and a Week Run</h2>
+<h3 id="51-a-day">5.1 A Day</h3>
+<p><strong>Start (10 minutes)</strong></p>
+<ul>
+<li>Read the current state in <code>design.md</code>;</li>
+<li>Read the unfinished task in <code>tasks/</code>;</li>
+<li>Read the frozen state in <code>next-session.md</code>;</li>
+<li>Pick <strong>one thing</strong>: either advance the smallest loop or validate the hardest point; write down its acceptance criteria.</li>
+</ul>
+<p><strong>During the day</strong></p>
+<ul>
+<li>Advance one task document at a time;</li>
+<li>Write the verify line before the implementation;</li>
+<li>When a step is done, check it and run the verification;</li>
+<li>Commit in small, independent, rollbackable steps;</li>
+<li>When you meet a hypothesis, write the falsification test before the implementation.</li>
+</ul>
+<p><strong>End (10 minutes)</strong></p>
+<ul>
+<li>Update the task document: what was done, where it is stuck, what is next;</li>
+<li>Update <code>changelog.md</code>: why it changed, not what changed;</li>
+<li>If there was a failure or a negative result, write it into <code>failed-attempts.md</code>;</li>
+<li>If the design changed, update <code>design.md</code> with a date.</li>
+</ul>
+<h3 id="52-a-week">5.2 A Week</h3>
+<ul>
+<li><strong>Evidence audit:</strong> find every number without a report; either add the report or delete the number;</li>
+<li><strong>Convergence:</strong> delete one thing that no longer constitutes the capability surface;</li>
+<li><strong>Structure check:</strong> are any files/functions/state fields beyond a readable threshold?</li>
+<li><strong>Release:</strong> if there is a batch of verified changes, cut a version and keep a rollback baseline;</li>
+<li><strong>Retrospective:</strong> what was the biggest rework this week? Which loop could have caught it?</li>
+</ul>
+<h3 id="53-commits-and-branches-small-steps-fast-elimination">5.3 Commits and Branches: Small Steps, Fast Elimination</h3>
+<h4 id="why-many-commits-instead-of-one-big-one-at-the-end">Why Many Commits Instead of One Big One at the End</h4>
+<p>It is not "the more commits the better"; it is: <strong>one commit = one concern + one verification + one reason.</strong></p>
+<p>Saving everything for one big commit is not a problem of "big"; it is that:</p>
+<ul>
+<li>when it breaks, you can only roll back the whole thing and cannot localize;</li>
+<li>there is no usable state in between, so <code>git bisect</code> has nowhere to start;</li>
+<li>review faces one enormous diff;</li>
+<li>handover cannot explain which step introduced what;</li>
+<li>you cannot release one of the fixes separately.</li>
+</ul>
+<p>Small commits buy five capabilities:</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>How it comes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Rollback</strong></td>
+<td>Every commit is a known-good state</td>
+</tr>
+<tr>
+<td><strong>Localization</strong></td>
+<td><code>git bisect</code> finds the problem in logarithmic steps</td>
+</tr>
+<tr>
+<td><strong>Review</strong></td>
+<td>One diff answers one question</td>
+</tr>
+<tr>
+<td><strong>Handover</strong></td>
+<td>The commit message is a decision record</td>
+</tr>
+<tr>
+<td><strong>Cherry-pick</strong></td>
+<td>A fix can be released alone</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="Figure 3: One big commit vs. small verified commits" src="../assets/fig3-commit-strategy.png"></p>
+<p><em>Figure 3: One big commit vs. small verified commits</em></p>
+<p>But note: <strong>commit granularity is semantic, not temporal.</strong> <code>git commit -m "wip"</code> every five minutes is not small-step committing; it is noise. A good commit can explain "why" on its own.</p>
+<p>Exception: a genuinely mechanical large change (repository-wide rename, formatting) can be one big commit, but the message must state "this is a pure mechanical change" and prove with <code>--color-moved</code> or an equivalent that no behavior change is smuggled in.</p>
+<h4 id="branches-validate-a-new-line-at-the-lowest-cost">Branches: Validate a New Line at the Lowest Cost</h4>
+<p>When a new direction is uncertain, do not think and edit on the main line. Open a short branch and do only the shortest validation:</p>
+<ul>
+<li>before starting, write down what result counts as "pass" and what counts as "abandon";</li>
+<li>do only the part that answers the question, not the full feature;</li>
+<li>keep the main branch usable at all times;</li>
+<li>pass: bring the conclusion back to the main line and continue;</li>
+<li>fail: discard the branch and write the reason into <code>failed-attempts.md</code>.</li>
+</ul>
+<p><img alt="Figure 4: Branch validation flow" src="../assets/fig4-branch-validation.png"></p>
+<p><em>Figure 4: Branch validation flow</em></p>
+<p>Two easy ways to drift:</p>
+<ol>
+<li><strong>The branch becomes a second product.</strong> A branch exists to buy information, not for long-term parallel development; when the timebox expires, merge or discard.</li>
+<li><strong>Merge the spike as-is after it passes.</strong> Validated code often carries spike roughness; the better move is to bring the conclusion back to the main line and rewrite it cleanly.</li>
+</ol>
+<p>In one sentence: <strong>code you can afford to throw away is cheap code.</strong></p>
+<hr>
+<h2 id="6-cross-project-evidence">6. Cross-Project Evidence</h2>
+<p>This method does not hold in only one project. Over the past months, I have reused the same skeleton across different languages and domains:</p>
+<table>
+<thead>
+<tr>
+<th>Practice</th>
+<th>Where it appears</th>
+<th>What it buys</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>design.md</code> + non-goals + hard constraints</td>
+<td>Rust runtime, offline speech, document pipeline, character chat, model project</td>
+<td>Direction does not drift</td>
+</tr>
+<tr>
+<td>Task docs + a verify per step</td>
+<td>Almost every project</td>
+<td>"Done" is checkable</td>
+</tr>
+<tr>
+<td>Evidence index / report binding</td>
+<td>Character chat, model project</td>
+<td>Conclusions are reviewable</td>
+</tr>
+<tr>
+<td><code>failed-attempts.md</code></td>
+<td>Trajectory-generation project</td>
+<td>Do not repeat dead ends</td>
+</tr>
+<tr>
+<td>Champion/challenger + fixed folds</td>
+<td>Anti-cheat model</td>
+<td>Decisions are not gut feeling</td>
+</tr>
+<tr>
+<td>Worklog rebuilt from evidence</td>
+<td>Corporate site, service portal, runtime</td>
+<td>Process is auditable</td>
+</tr>
+<tr>
+<td><code>AGENTS.md</code> contract</td>
+<td>Offline speech</td>
+<td>AI collaboration is reproducible</td>
+</tr>
+<tr>
+<td><code>llms.txt</code> + <code>--json</code></td>
+<td>Offline speech</td>
+<td>Agents can use it directly</td>
+</tr>
+<tr>
+<td>Prove the gate fails first</td>
+<td>Corporate site</td>
+<td>Tests are not decoration</td>
+</tr>
+<tr>
+<td>Release notes + checksums</td>
+<td>Model project, desktop app</td>
+<td>Delivery is rollbackable</td>
+</tr>
+<tr>
+<td>Real delivery load</td>
+<td>A six-day mini-program project: 283 commits / 13.5k lines / 10,419 model calls</td>
+<td>The method survives a long task</td>
+</tr>
+</tbody>
+</table>
+<p>Scale: more than ten projects, about 2,000 commits, covering Rust, Go, Python, TypeScript, Flutter, Kotlin, and C++ firmware. <strong>It still holds across languages, which shows it is a method, not a habit.</strong></p>
+<p>A concrete sample: from 2026-10-22 to 10-28, the runtime was used to build a WeChat mini-program merchant client. The session record contains 252 real user inputs (plus 124 system notifications), 10,419 model calls, and 11,424 tool calls; on the token side, 28.6M input, 4.56M output, 1.002B cache reads (97.2% hit rate); tool execution p50 470ms, p95 9.1s (excluding calls that wait for a human). The same repository had 283 commits, 13.5k lines of mini-program code, and left 8 ADRs, 5 daily worklogs, 94KB of product design, and 65KB of API contract. This is not proof that "AI writes fast"; it is proof that "the evidence loop can be maintained on a real long task."</p>
+<hr>
+<h2 id="7-anti-patterns-and-the-costs-i-paid">7. Anti-Patterns and the Costs I Paid</h2>
+<p>The method has not always been executed well. These are real counterexamples:</p>
+<ol>
+<li><strong>Dual protocol.</strong> To preserve "byte compatibility," a second streaming protocol was kept; every fix had to be done twice, and behavior gradually diverged. Lesson: <strong>compatibility cannot come at the cost of a single source of truth.</strong></li>
+<li><strong>Stale binary.</strong> A conclusion of "code-path inconsistency" was drawn from a fourteen-hour-old build. Lesson: <strong>rebuild before believing a difference.</strong></li>
+<li><strong>Broken instrument.</strong> A probe always returned the same value, and much time was spent suspecting the system under test. Lesson: <strong>an instrument needs a known-good reading.</strong></li>
+<li><strong>A plausible mechanism.</strong> Three times in a row, an explanation "read out of the numbers" failed the test. Lesson: <strong>a mechanism explanation is not a diagnosis.</strong></li>
+<li><strong>Unreviewable numbers.</strong> Reports were gitignored, so numbers in the design doc could not be traced. Later <code>evidence.md</code> was added, and the rule became "no report, no citation."</li>
+<li><strong>A project without commits.</strong> One project had complete code that could start, but only <code>git add</code>, no <code>git commit</code>, and no automated tests. The worklog recorded this honestly. Lesson: <strong>a project without history has no maintainability.</strong></li>
+<li><strong>Documentation drift.</strong> The checkboxes in a task doc were correct, but the description was stale. The later practice was to mark "description drift" instead of pretending it did not happen.</li>
+<li><strong>Splitting modules for an imaginary future.</strong> A business with three feature points was hard-split into three modules/services; every change crossed three boundaries, and one function call became a protocol round trip. Lesson: <strong>cut by logical unit, not by feature point.</strong></li>
+<li><strong>Shrinking the MVP.</strong> Doing a little of every feature verifies nothing. Lesson: <strong>the MVP validates the hardest point; it does not shrink every feature evenly.</strong></li>
+<li><strong>Hard-coding instead of leaving a seam.</strong> Without entry/exit points, every new thing requires changing the trunk. Lesson: <strong>leave seams, but do not implement early.</strong></li>
+<li><strong>Saving one big commit.</strong> There is no usable state in between; a break can only be rolled back wholesale, and <code>bisect</code> cannot help. Lesson: <strong>one commit = one concern + one verification + one reason.</strong></li>
+<li><strong>Letting a branch become a second product.</strong> A spike branch dragged on for weeks, and merging became a second development effort. Lesson: <strong>a branch buys information, not long-term parallelism; write the merge/discard criterion before starting.</strong></li>
+</ol>
+<p>The costs must also be stated:</p>
+<ul>
+<li>writing docs, building instruments, and recording failures all <strong>consume present time</strong>;</li>
+<li>not every project deserves the full process; small scripts use a lightweight version;</li>
+<li>the method reduces <strong>long-term cost</strong> and looks slower than "just start writing" in the short term;</li>
+<li>it cannot replace judgment; it only makes the traces of judgment reviewable.</li>
+</ul>
+<hr>
+<h2 id="8-why-this-method-is-worth-more-in-the-ai-collaboration-era">8. Why This Method Is Worth More in the AI-Collaboration Era</h2>
+<p>AI has changed the cost structure of development:</p>
+<ul>
+<li>writing code is cheaper;</li>
+<li>but <strong>stating what you want</strong> and <strong>judging whether it is right</strong> are relatively more expensive;</li>
+<li>AI forgets context and confidently gives wrong conclusions;</li>
+<li>so "verifiable" has moved from a bonus to a necessity.</li>
+</ul>
+<p>In this structure, the developer's role looks more like:</p>
+<ul>
+<li><strong>a definer of constraints:</strong> what must hold, what is never done;</li>
+<li><strong>a designer of instruments:</strong> how to prove it right, how to prove it wrong;</li>
+<li><strong>a judge of evidence:</strong> which conclusion is citable, which is only a guess;</li>
+<li><strong>a converger of systems:</strong> when to delete, when to stop.</li>
+</ul>
+<p>In one sentence: <strong>AI can write code, but you must own the definition of done.</strong></p>
+<p>This is also why I treat <code>AGENTS.md</code>, <code>llms.txt</code>, and <code>--json</code> as product capabilities rather than documentation work: <strong>when agents become the first users of software, interface readability is product usability.</strong></p>
+<hr>
+<h2 id="9-conclusion">9. Conclusion</h2>
+<p>The method compresses into three sentences:</p>
+<ol>
+<li><strong>Use constraints to rule out wrong directions first, then use evidence to prove you did not go wrong.</strong></li>
+<li><strong>Expand capabilities first, then converge with criteria; deletion and refactoring both need machine proof.</strong></li>
+<li><strong>Write context into documents, so the next time (human or AI) does not have to re-think.</strong></li>
+</ol>
+<p>There is also an attitude running through everything: <strong>do not overthink.</strong> Once the smallest loop is settled, build it; spend energy on real risks, not imaginary enemies; leave entry/exit points in advance, but do not implement the future early.</p>
+<p>Efficiency is not writing faster; it is <strong>redoing less</strong>.</p>
+<blockquote>
+<p>Make things provable first, then make them fast.</p>
+</blockquote>
+<hr>
+<h2 id="appendix-a-five-ready-to-use-templates">Appendix A: Five Ready-to-Use Templates</h2>
+<h3 id="a1-designmd">A.1 <code>design.md</code></h3>
+<pre><code class="language-markdown"># &lt;Project&gt; — Design
+
+Status: &lt;phase&gt; (&lt;date&gt;)
+
+## What this is
+&lt;one paragraph&gt;
+
+## Goals
+- ...
+
+## Non-goals
+- ... **ever.** &lt;why&gt;
+- ... &lt;why this is a different product&gt;
+
+## Hard constraints
+| ID | Constraint | Consequence |
+|----|-----------|-------------|
+| C1 | ...       | ...         |
+
+## Rejected alternatives
+- &lt;option&gt; — rejected because ...
+
+## Amendments
+- &lt;date&gt;: &lt;what changed&gt; — &lt;why the original text is kept&gt;
+</code></pre>
+<h3 id="a2-taskstaskmd">A.2 <code>tasks/&lt;task&gt;.md</code></h3>
+<pre><code class="language-markdown"># Task: &lt;name&gt;
+
+Observed: &lt;symptom, quote, log, table&gt;
+Hypothesis: &lt;what would explain it&gt;
+Falsify: &lt;the test that would prove it wrong&gt;
+
+## Steps
+1. [ ] &lt;action&gt;
+   → verify: &lt;command + expected result&gt;
+2. [ ] &lt;action&gt;
+   → verify: ...
+
+## Outcome
+&lt;what actually happened, including negative results&gt;
+</code></pre>
+<h3 id="a3-evidencemd">A.3 <code>evidence.md</code></h3>
+<pre><code class="language-markdown"># Evidence
+
+Rule: a number may appear in design/task docs only if a row below names its report.
+
+| # | Claim | Report | Backed? |
+|---|-------|--------|---------|
+| 1 | ...   | reports/... | yes / partly / no |
+</code></pre>
+<h3 id="a4-agentsmd">A.4 <code>AGENTS.md</code></h3>
+<pre><code class="language-markdown"># Working in this repository
+
+## Read before coding
+- docs/llmwiki/design.md
+- docs/llmwiki/tasks/&lt;current&gt;.md
+- docs/llmwiki/changelog.md
+
+## Rules
+- Conventional commits; explain why in the body.
+- Every step carries a verify line.
+- Measure before changing a default.
+- A plausible mechanism is not a diagnosis.
+- Report negative results.
+- Do not add a dependency without saying why it earns its place.
+</code></pre>
+<h3 id="a5-commit-message">A.5 Commit Message</h3>
+<pre><code>fix(&lt;area&gt;): &lt;what changed&gt;
+
+&lt;why it was wrong / what was observed&gt;
+&lt;what the fix assumes&gt;
+&lt;how it was verified&gt;
+</code></pre>
+<hr>
+<h2 id="appendix-b-checklist">Appendix B: Checklist</h2>
+<ul>
+<li>[ ] Does the project have one page stating goals, non-goals, and hard constraints?</li>
+<li>[ ] Are rejected options recorded?</li>
+<li>[ ] Does every task have an executable verify?</li>
+<li>[ ] Can every number point to a report?</li>
+<li>[ ] Are failures and negative results recorded?</li>
+<li>[ ] Has every new gate been proven to fail?</li>
+<li>[ ] Are changes small, independent, and rollbackable?</li>
+<li>[ ] Do pure moves have machine proof?</li>
+<li>[ ] Does deletion have a criterion, rather than a feeling?</li>
+<li>[ ] Can the docs be handed to the next person (or the next AI session)?</li>
+<li>[ ] Can the project's interfaces be used directly by an agent?</li>
+<li>[ ] Is there a smallest end-to-end loop that runs?</li>
+<li>[ ] Did you write abstractions early for "might exist someday" requirements?</li>
+<li>[ ] Are module boundaries cut by logical unit or evenly by feature point?</li>
+<li>[ ] Are entry/exit points clear when adding or deleting features?</li>
+<li>[ ] Does the MVP validate the hardest/controversial point, or shrink every feature once?</li>
+<li>[ ] Is every commit one concern + one verification?</li>
+<li>[ ] Can this change be rolled back alone and located by <code>bisect</code>?</li>
+<li>[ ] Before opening a branch, is the merge/discard criterion written down?</li>
+<li>[ ] Does a failed branch leave its reason behind?</li>
+<li>[ ] What did you delete this week?</li>
+</ul>
+<hr>
+<p><em>All cases come from real projects; client names, project identifiers, device information, and internal addresses have been removed.</em></p>
+  </main>
+  <footer>Written by wwkkyy0325. Architecture, agent runtimes, Rust. One developer, many projects.</footer>
+</body>
+</html>
