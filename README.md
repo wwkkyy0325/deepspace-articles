@@ -1,5 +1,8 @@
 # DeepSpace Articles
 
+**Live site:** <https://wwkkyy0325.github.io/deepspace-articles/>
+**Repository:** <https://github.com/wwkkyy0325/deepspace-articles>
+
 A bilingual collection of two long-form engineering essays from the DeepSpace project.
 
 ## 1. From Expansion to Convergence
@@ -25,11 +28,27 @@ templates.
 ```
 DeepSpace-Articles/
   README.md
-  zh/       Chinese originals
-  en/       English translations
-  assets/   Figures used by the articles (PNG)
-  assets/svg/  Editable SVG sources
+  build.py              static-site generator
+  requirements.txt      Python dependencies for build.py
+  index.html            generated landing page
+  styles.css            site stylesheet
+  zh/                   Chinese originals + generated HTML
+  en/                   English translations + generated HTML
+  assets/               figures used by the articles (PNG)
+  assets/svg/           editable SVG sources
 ```
+
+## Regenerate the Site
+
+The Markdown files are the source of truth. After editing them:
+
+```bash
+pip install -r requirements.txt
+python build.py
+```
+
+Then commit and push. GitHub Pages serves the repository root; `.nojekyll` keeps the files
+as-is.
 
 ## Figures
 
